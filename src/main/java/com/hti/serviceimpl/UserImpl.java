@@ -25,11 +25,11 @@ public class UserImpl implements UserService {
     private final Userrepository repository;
 
     @Override
-    public ResponseEntity<?> create(Userrequest request, String username, String ipAddress) {
-        logger.info("{}: Creating user | email={}", username, request.getEmail());
+    public ResponseEntity<?> create(Userrequest request) {
+        logger.info("{}: Creating user | email={}", request.getEmail());
 
         if (repository.existsByEmail(request.getEmail())) {
-            logger.warn("{}: User already exists | email={}", username, request.getEmail());
+            logger.warn("{}: User already exists | email={}",  request.getEmail());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("User with email '" + request.getEmail() + "' already exists");
         }
@@ -47,13 +47,13 @@ public class UserImpl implements UserService {
                 .build();
 
         user = repository.save(user);
-        logger.info("{}: User created | id={} email={}", username, user.getId(), user.getEmail());
+        logger.info("{}: User created | id={} email={}",  user.getId(), user.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(user));
     }
 
     @Override
-    public ResponseEntity<?> update(String id, Userrequest request, String username, String ipAddress) {
-        logger.info("{}: Updating user | id={}", username, id);
+    public ResponseEntity<?> update(String id, Userrequest request) {
+        logger.info("{}: Updating user | id={}",  id);
 
         User user = repository.findById(id).orElse(null);
         if (user == null) {
@@ -68,26 +68,26 @@ public class UserImpl implements UserService {
         user.setAttributes(request.getAttributes());
 
         user = repository.save(user);
-        logger.info("{}: User updated | id={}", username, user.getId());
+        logger.info("{}: User updated | id={}", user.getId());
         return ResponseEntity.ok(toResponse(user));
     }
 
     @Override
-    public ResponseEntity<?> delete(String id, String username, String ipAddress) {
-        logger.info("{}: Deleting user | id={}", username, id);
+    public ResponseEntity<?> delete(String id) {
+        logger.info("{}: Deleting user | id={}", id);
 
         if (!repository.existsById(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found: " + id);
         }
 
         repository.deleteById(id);
-        logger.info("{}: User deleted | id={}", username, id);
+        logger.info("{}: User deleted | id={}",  id);
         return ResponseEntity.ok("User deleted successfully");
     }
 
     @Override
-    public ResponseEntity<?> getById(String id, String username, String ipAddress) {
-        logger.info("{}: Fetching user | id={}", username, id);
+    public ResponseEntity<?> getById(String id) {
+        logger.info("{}: Fetching user | id={}",  id);
 
         User user = repository.findById(id).orElse(null);
         if (user == null) {
@@ -97,24 +97,24 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> getAll(String username, String ipAddress) {
-        logger.info("{}: Fetching all users", username);
+    public ResponseEntity<?> getAll() {
+        logger.info("{}: Fetching all users");
         List<Userresponse> list = repository.findAll()
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 
     @Override
-    public ResponseEntity<?> getByOrganisation(String organisationId, String username, String ipAddress) {
-        logger.info("{}: Fetching users by org | orgId={}", username, organisationId);
+    public ResponseEntity<?> getByOrganisation(String organisationId) {
+        logger.info("{}: Fetching users by org | orgId={}",  organisationId);
         List<Userresponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 
     @Override
-    public ResponseEntity<?> getByEntity(String entityId, String username, String ipAddress) {
-        logger.info("{}: Fetching users by entity | entityId={}", username, entityId);
+    public ResponseEntity<?> getByEntity(String entityId) {
+        logger.info("{}: Fetching users by entity | entityId={}",  entityId);
         List<Userresponse> list = repository.findByEntityId(entityId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);

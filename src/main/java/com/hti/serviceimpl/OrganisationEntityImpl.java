@@ -25,8 +25,8 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     private final Organisationentityrepository repository;
 
     @Override
-    public ResponseEntity<?> create(OrganisationEntityRequest request, String username, String ipAddress) {
-        logger.info("{}: Creating entity | type={} orgId={}", username, request.getEntityType(), request.getOrganisationId());
+    public ResponseEntity<?> create(OrganisationEntityRequest request) {
+        logger.info("{}: Creating entity | type={} orgId={}",  request.getEntityType(), request.getOrganisationId());
 
         Organisationentity entity = Organisationentity.builder()
                 .organisationId(request.getOrganisationId())
@@ -36,13 +36,13 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
                 .build();
 
         entity = repository.save(entity);
-        logger.info("{}: Entity created | id={} type={}", username, entity.getId(), entity.getEntityType());
+        logger.info("{}: Entity created | id={} type={}",entity.getId(), entity.getEntityType());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(entity));
     }
 
     @Override
-    public ResponseEntity<?> update(String id, OrganisationEntityRequest request, String username, String ipAddress) {
-        logger.info("{}: Updating entity | id={}", username, id);
+    public ResponseEntity<?> update(String id, OrganisationEntityRequest request) {
+        logger.info("{}: Updating entity | id={}",  id);
 
         Organisationentity entity = repository.findById(id).orElse(null);
         if (entity == null) {
@@ -54,26 +54,26 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         entity.setAttributes(request.getAttributes());
 
         entity = repository.save(entity);
-        logger.info("{}: Entity updated | id={}", username, entity.getId());
+        logger.info("{}: Entity updated | id={}",  entity.getId());
         return ResponseEntity.ok(toResponse(entity));
     }
 
     @Override
-    public ResponseEntity<?> delete(String id, String username, String ipAddress) {
-        logger.info("{}: Deleting entity | id={}", username, id);
+    public ResponseEntity<?> delete(String id) {
+        logger.info("{}: Deleting entity | id={}",  id);
 
         if (!repository.existsById(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Entity not found: " + id);
         }
 
         repository.deleteById(id);
-        logger.info("{}: Entity deleted | id={}", username, id);
+        logger.info("{}: Entity deleted | id={}",  id);
         return ResponseEntity.ok("Entity deleted successfully");
     }
 
     @Override
-    public ResponseEntity<?> getById(String id, String username, String ipAddress) {
-        logger.info("{}: Fetching entity | id={}", username, id);
+    public ResponseEntity<?> getById(String id) {
+        logger.info("{}: Fetching entity | id={}",  id);
 
         Organisationentity entity = repository.findById(id).orElse(null);
         if (entity == null) {
@@ -83,32 +83,32 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     }
 
     @Override
-    public ResponseEntity<?> getAll(String username, String ipAddress) {
-        logger.info("{}: Fetching all entities", username);
+    public ResponseEntity<?> getAll() {
+        logger.info("{}: Fetching all entities");
         List<Organisationentityresponse> list = repository.findAll()
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 
     @Override
-    public ResponseEntity<?> getByOrganisation(String organisationId, String username, String ipAddress) {
-        logger.info("{}: Fetching entities by org | orgId={}", username, organisationId);
+    public ResponseEntity<?> getByOrganisation(String organisationId) {
+        logger.info("{}: Fetching entities by org | orgId={}",  organisationId);
         List<Organisationentityresponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 
     @Override
-    public ResponseEntity<?> getByEntityType(String entityType, String username, String ipAddress) {
-        logger.info("{}: Fetching entities by type | type={}", username, entityType);
+    public ResponseEntity<?> getByEntityType(String entityType) {
+        logger.info("{}: Fetching entities by type | type={}",  entityType);
         List<Organisationentityresponse> list = repository.findByEntityType(entityType)
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 
     @Override
-    public ResponseEntity<?> searchByAttribute(String organisationId, String key, String value, String username, String ipAddress) {
-        logger.info("{}: Searching entity by attribute | orgId={} key={} value={}", username, organisationId, key, value);
+    public ResponseEntity<?> searchByAttribute(String organisationId, String key, String value) {
+        logger.info("{}: Searching entity by attribute | orgId={} key={} value={}",  organisationId, key, value);
         List<Organisationentityresponse> list = repository.findByOrganisationIdAndAttribute(organisationId, key, value)
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);

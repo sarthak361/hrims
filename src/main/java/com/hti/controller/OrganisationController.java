@@ -15,37 +15,28 @@ public class OrganisationController {
     private final OrganisationService service;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody Organisationrequest request,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.create(request, username, ipAddress);
+    public ResponseEntity<?> create(@RequestBody Organisationrequest request) {
+        return service.create(request);
     }
 
     @GetMapping
-    public ResponseEntity<?> getAll(@RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.getAll(username, ipAddress);
+    public ResponseEntity<?> getAll() {
+        return service.getAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable String id,
-                                      @RequestHeader String username,
-                                      @RequestHeader String ipAddress) {
-        return service.getById(id, username, ipAddress);
+    public ResponseEntity<?> getById(@PathVariable String id) {
+        return service.getById(id);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable String id,
-                                     @RequestBody Organisationrequest request,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.update(id, request, username, ipAddress);
+                                    @RequestBody Organisationrequest request) {
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.delete(id, username, ipAddress);
+    public ResponseEntity<?> delete(@PathVariable String id) {
+        return service.delete(id);
     }
 }

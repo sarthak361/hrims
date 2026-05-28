@@ -7,17 +7,17 @@ import org.springframework.http.ResponseEntity;
 
 public interface UserService {
 
-    ResponseEntity<?> create(Userrequest request, String username, String ipAddress);
+    ResponseEntity<?> create(Userrequest request);
 
-    ResponseEntity<?> update(String id, Userrequest request, String username, String ipAddress);
+    ResponseEntity<?> update(String id, Userrequest request);
 
-    ResponseEntity<?> delete(String id, String username, String ipAddress);
+    ResponseEntity<?> delete(String id);
 
-    ResponseEntity<?> getById(String id, String username, String ipAddress);
+    ResponseEntity<?> getById(String id);
 
-    ResponseEntity<?> getAll(String username, String ipAddress);
+    ResponseEntity<?> getAll();
 
-    ResponseEntity<?> getByOrganisation(String organisationId, String username, String ipAddress);
+    ResponseEntity<?> getByOrganisation(String organisationId);
 
-    ResponseEntity<?> getByEntity(String entityId, String username, String ipAddress);
+    ResponseEntity<?> getByEntity(String entityId);
 }

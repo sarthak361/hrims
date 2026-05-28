@@ -15,51 +15,38 @@ public class UserController {
     private final UserService service;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody Userrequest request,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.create(request, username, ipAddress);
+    public ResponseEntity<?> create(@RequestBody Userrequest request) {
+        return service.create(request);
     }
 
     @GetMapping
-    public ResponseEntity<?> getAll(@RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.getAll(username, ipAddress);
+    public ResponseEntity<?> getAll() {
+        return service.getAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable String id,
-                                      @RequestHeader String username,
-                                      @RequestHeader String ipAddress) {
-        return service.getById(id, username, ipAddress);
+    public ResponseEntity<?> getById(@PathVariable String id) {
+        return service.getById(id);
     }
 
     @GetMapping("/org/{organisationId}")
-    public ResponseEntity<?> getByOrganisation(@PathVariable String organisationId,
-                                                @RequestHeader String username,
-                                                @RequestHeader String ipAddress) {
-        return service.getByOrganisation(organisationId, username, ipAddress);
+    public ResponseEntity<?> getByOrganisation(@PathVariable String organisationId) {
+        return service.getByOrganisation(organisationId);
     }
 
     @GetMapping("/entity/{entityId}")
-    public ResponseEntity<?> getByEntity(@PathVariable String entityId,
-                                          @RequestHeader String username,
-                                          @RequestHeader String ipAddress) {
-        return service.getByEntity(entityId, username, ipAddress);
+    public ResponseEntity<?> getByEntity(@PathVariable String entityId) {
+        return service.getByEntity(entityId);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable String id,
-                                     @RequestBody Userrequest request,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.update(id, request, username, ipAddress);
+                                    @RequestBody Userrequest request) {
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id,
-                                     @RequestHeader String username,
-                                     @RequestHeader String ipAddress) {
-        return service.delete(id, username, ipAddress);
+    public ResponseEntity<?> delete(@PathVariable String id) {
+        return service.delete(id);
     }
 }

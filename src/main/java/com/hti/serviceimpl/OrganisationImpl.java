@@ -24,11 +24,11 @@ public class OrganisationImpl implements OrganisationService {
     private final Organisationrepository repository;
 
     @Override
-    public ResponseEntity<?> create(Organisationrequest request, String username, String ipAddress) {
-        logger.info("{}: Creating organisation | name={}", username, request.getOrganizationName());
+    public ResponseEntity<?> create(Organisationrequest request) {
+        logger.info("{}: Creating organisation | name={}",  request.getOrganizationName());
 
         if (repository.existsByEmail(request.getEmail())) {
-            logger.warn("{}: Organisation already exists | email={}", username, request.getEmail());
+            logger.warn("{}: Organisation already exists | email={}", request.getEmail());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Organisation with email '" + request.getEmail() + "' already exists");
         }
@@ -52,17 +52,17 @@ public class OrganisationImpl implements OrganisationService {
                 .build();
 
         org = repository.save(org);
-        logger.info("{}: Organisation created | id={} name={}", username, org.getId(), org.getOrganizationName());
+        logger.info("{}: Organisation created | id={} name={}", org.getId(), org.getOrganizationName());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(org));
     }
 
     @Override
-    public ResponseEntity<?> update(String id, Organisationrequest request, String username, String ipAddress) {
-        logger.info("{}: Updating organisation | id={}", username, id);
+    public ResponseEntity<?> update(String id, Organisationrequest request) {
+        logger.info("{}: Updating organisation | id={}", id);
 
         organisation org = repository.findById(id).orElse(null);
         if (org == null) {
-            logger.warn("{}: Organisation not found | id={}", username, id);
+            logger.warn("{}: Organisation not found | id={}",  id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organisation not found: " + id);
         }
 
@@ -83,27 +83,27 @@ public class OrganisationImpl implements OrganisationService {
         org.setTimezone(request.getTimezone());
 
         org = repository.save(org);
-        logger.info("{}: Organisation updated | id={}", username, org.getId());
+        logger.info("{}: Organisation updated | id={}",org.getId());
         return ResponseEntity.ok(toResponse(org));
     }
 
     @Override
-    public ResponseEntity<?> delete(String id, String username, String ipAddress) {
-        logger.info("{}: Deleting organisation | id={}", username, id);
+    public ResponseEntity<?> delete(String id) {
+        logger.info("{}: Deleting organisation | id={}",  id);
 
         if (!repository.existsById(id)) {
-            logger.warn("{}: Organisation not found | id={}", username, id);
+            logger.warn("{}: Organisation not found | id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organisation not found: " + id);
         }
 
         repository.deleteById(id);
-        logger.info("{}: Organisation deleted | id={}", username, id);
+        logger.info("{}: Organisation deleted | id={}",  id);
         return ResponseEntity.ok("Organisation deleted successfully");
     }
 
     @Override
-    public ResponseEntity<?> getById(String id, String username, String ipAddress) {
-        logger.info("{}: Fetching organisation | id={}", username, id);
+    public ResponseEntity<?> getById(String id) {
+        logger.info("{}: Fetching organisation | id={}",  id);
 
         organisation org = repository.findById(id).orElse(null);
         if (org == null) {
@@ -113,8 +113,8 @@ public class OrganisationImpl implements OrganisationService {
     }
 
     @Override
-    public ResponseEntity<?> getAll(String username, String ipAddress) {
-        logger.info("{}: Fetching all organisations", username);
+    public ResponseEntity<?> getAll() {
+        logger.info("{}: Fetching all organisations");
         List<Organisationresponse> list = repository.findAll()
                 .stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(list);
