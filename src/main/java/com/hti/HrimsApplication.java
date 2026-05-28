@@ -1,4 +1,4 @@
-package com.hti.hrims;
+package com.hti;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

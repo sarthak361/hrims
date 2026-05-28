@@ -18,43 +18,42 @@ import java.util.Map;
 @Entity
 @Table(name = "users")
 public class User {
-
+	 
     @Id
     @GeneratedValue
     @UuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
-
+ 
     @Column(name = "first_name", nullable = false)
     private String firstName;
-
+ 
     @Column(name = "last_name", nullable = false)
     private String lastName;
-
+ 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-
+ 
     @Column(name = "phone")
     private String phone;
-
+ 
     @Column(name = "password", nullable = false)
     private String password;
-
+ 
     @Column(name = "role")
     private String role;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organisation_id", nullable = false)
-    private organisation organisation;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entity_id")
-    private Organisationentity entity;
-
+ 
+    // Plain String fields — no ManyToOne mapping
+    @Column(name = "organisation_id", nullable = false)
+    private String organisationId;
+ 
+    @Column(name = "entity_id")
+    private String entityId;
+ 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "jsonb")
     private Map<String, Object> attributes;
-
+ 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
