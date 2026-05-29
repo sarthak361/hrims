@@ -22,21 +22,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrganisationImpl implements OrganisationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrganisationImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger("tracklogger");
 
     private final Organisationrepository repository;
 
     @Override
     public ResponseEntity<?> create(Organisationrequest request) {
         logger.info("Creating organisation | name={}", request.getOrganizationName());
-
-        if (request.getOrganizationName() == null || request.getOrganizationName().isBlank()) {
-            throw new BadRequestException("organizationName is required");
-        }
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("email is required");
-        }
 
         if (repository.existsByEmail(request.getEmail())) {
             logger.warn("Organisation already exists | email={}", request.getEmail());
@@ -63,11 +55,13 @@ public class OrganisationImpl implements OrganisationService {
                     .build();
 
             org = repository.save(org);
-            logger.info("Organisation created | id={} name={}", org.getId(), org.getOrganizationName());
+            logger.info("Organisation created successfully | id={} name={}", org.getId(), org.getOrganizationName());
             return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(org));
 
+        } catch (BadRequestException ex) {
+            throw ex;
         } catch (Exception ex) {
-            logger.error("Error creating organisation | name={} error={}", request.getOrganizationName(), ex.getMessage());
+        	logger.error("Error creating organisation | name={}", request.getOrganizationName(), ex);
             throw new InternalServerException("Failed to create organisation: " + ex.getMessage());
         }
     }
@@ -77,11 +71,10 @@ public class OrganisationImpl implements OrganisationService {
         logger.info("Updating organisation | id={}", id);
 
         organisation org = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Organisation not found: " + id));
-
-        if (request.getOrganizationName() == null || request.getOrganizationName().isBlank()) {
-            throw new BadRequestException("organizationName is required");
-        }
+                .orElseThrow(() -> {
+                    logger.warn("Organisation not found | id={}", id);
+                    return new NotFoundException("Organisation not found: " + id);
+                });
 
         try {
             org.setOrganizationName(request.getOrganizationName());
@@ -101,11 +94,11 @@ public class OrganisationImpl implements OrganisationService {
             org.setTimezone(request.getTimezone());
 
             org = repository.save(org);
-            logger.info("Organisation updated | id={}", org.getId());
+            logger.info("Organisation updated successfully | id={}", org.getId());
             return ResponseEntity.ok(toResponse(org));
 
         } catch (Exception ex) {
-            logger.error("Error updating organisation | id={} error={}", id, ex.getMessage());
+        	logger.error("Error updating organisation | id={}", id, ex);
             throw new InternalServerException("Failed to update organisation: " + ex.getMessage());
         }
     }
@@ -115,16 +108,17 @@ public class OrganisationImpl implements OrganisationService {
         logger.info("Deleting organisation | id={}", id);
 
         if (!repository.existsById(id)) {
+            logger.warn("Organisation not found | id={}", id);
             throw new NotFoundException("Organisation not found: " + id);
         }
 
         try {
             repository.deleteById(id);
-            logger.info("Organisation deleted | id={}", id);
+            logger.info("Organisation deleted successfully | id={}", id);
             return ResponseEntity.ok("Organisation deleted successfully");
 
         } catch (Exception ex) {
-            logger.error("Error deleting organisation | id={} error={}", id, ex.getMessage());
+        	logger.error("Error deleting organisation | id={}", id, ex);
             throw new InternalServerException("Failed to delete organisation: " + ex.getMessage());
         }
     }
@@ -134,8 +128,12 @@ public class OrganisationImpl implements OrganisationService {
         logger.info("Fetching organisation | id={}", id);
 
         organisation org = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Organisation not found: " + id));
+                .orElseThrow(() -> {
+                    logger.warn("Organisation not found | id={}", id);
+                    return new NotFoundException("Organisation not found: " + id);
+                });
 
+        logger.info("Organisation fetched successfully | id={}", id);
         return ResponseEntity.ok(toResponse(org));
     }
 
@@ -146,10 +144,11 @@ public class OrganisationImpl implements OrganisationService {
         try {
             List<Organisationresponse> list = repository.findAll()
                     .stream().map(this::toResponse).collect(Collectors.toList());
+            logger.info("Organisations fetched successfully | count={}", list.size());
             return ResponseEntity.ok(list);
 
         } catch (Exception ex) {
-            logger.error("Error fetching all organisations | error={}", ex.getMessage());
+        	logger.error("Error fetching all organisations", ex);
             throw new InternalServerException("Failed to fetch organisations: " + ex.getMessage());
         }
     }

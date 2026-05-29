@@ -30,18 +30,6 @@ public class UserImpl implements UserService {
     public ResponseEntity<?> create(Userrequest request) {
         logger.info("Creating user | email={}", request.getEmail());
 
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("email is required");
-        }
-
-        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
-            throw new BadRequestException("firstName is required");
-        }
-
-        if (request.getOrganisationId() == null || request.getOrganisationId().isBlank()) {
-            throw new BadRequestException("organisationId is required");
-        }
-
         if (repository.existsByEmail(request.getEmail())) {
             logger.warn("User already exists | email={}", request.getEmail());
             throw new BadRequestException("User with email '" + request.getEmail() + "' already exists");
@@ -59,11 +47,13 @@ public class UserImpl implements UserService {
                     .build();
 
             user = repository.save(user);
-            logger.info("User created | id={} email={}", user.getId(), user.getEmail());
+            logger.info("User created successfully | id={} email={}", user.getId(), user.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(user));
 
+        } catch (BadRequestException ex) {
+            throw ex;
         } catch (Exception ex) {
-            logger.error("Error creating user | email={} error={}", request.getEmail(), ex.getMessage());
+        	logger.error("Error creating user | email={}", request.getEmail(), ex);
             throw new InternalServerException("Failed to create user: " + ex.getMessage());
         }
     }
@@ -73,11 +63,10 @@ public class UserImpl implements UserService {
         logger.info("Updating user | id={}", id);
 
         User user = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: " + id));
-
-        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
-            throw new BadRequestException("firstName is required");
-        }
+                .orElseThrow(() -> {
+                    logger.warn("User not found | id={}", id);
+                    return new NotFoundException("User not found: " + id);
+                });
 
         try {
             user.setFirstName(request.getFirstName());
@@ -86,11 +75,11 @@ public class UserImpl implements UserService {
             user.setEntityId(request.getEntityId());
 
             user = repository.save(user);
-            logger.info("User updated | id={}", user.getId());
+            logger.info("User updated successfully | id={}", user.getId());
             return ResponseEntity.ok(toResponse(user));
 
         } catch (Exception ex) {
-            logger.error("Error updating user | id={} error={}", id, ex.getMessage());
+        	logger.error("Error updating user | id={}", id, ex);
             throw new InternalServerException("Failed to update user: " + ex.getMessage());
         }
     }
@@ -100,16 +89,17 @@ public class UserImpl implements UserService {
         logger.info("Deleting user | id={}", id);
 
         if (!repository.existsById(id)) {
+            logger.warn("User not found | id={}", id);
             throw new NotFoundException("User not found: " + id);
         }
 
         try {
             repository.deleteById(id);
-            logger.info("User deleted | id={}", id);
+            logger.info("User deleted successfully | id={}", id);
             return ResponseEntity.ok("User deleted successfully");
 
         } catch (Exception ex) {
-            logger.error("Error deleting user | id={} error={}", id, ex.getMessage());
+        	logger.error("Error deleting user | id={}", id, ex);
             throw new InternalServerException("Failed to delete user: " + ex.getMessage());
         }
     }
@@ -119,8 +109,12 @@ public class UserImpl implements UserService {
         logger.info("Fetching user | id={}", id);
 
         User user = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: " + id));
+                .orElseThrow(() -> {
+                    logger.warn("User not found | id={}", id);
+                    return new NotFoundException("User not found: " + id);
+                });
 
+        logger.info("User fetched successfully | id={}", id);
         return ResponseEntity.ok(toResponse(user));
     }
 
@@ -131,10 +125,11 @@ public class UserImpl implements UserService {
         try {
             List<Userresponse> list = repository.findAll()
                     .stream().map(this::toResponse).collect(Collectors.toList());
+            logger.info("Users fetched successfully | count={}", list.size());
             return ResponseEntity.ok(list);
 
         } catch (Exception ex) {
-            logger.error("Error fetching all users | error={}", ex.getMessage());
+        	logger.error("Error fetching all users", ex);
             throw new InternalServerException("Failed to fetch users: " + ex.getMessage());
         }
     }
@@ -143,17 +138,15 @@ public class UserImpl implements UserService {
     public ResponseEntity<?> getByOrganisation(String organisationId) {
         logger.info("Fetching users by org | orgId={}", organisationId);
 
-        if (organisationId == null || organisationId.isBlank()) {
-            throw new BadRequestException("organisationId is required");
-        }
-
         List<Userresponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
+            logger.warn("No users found | orgId={}", organisationId);
             throw new NotFoundException("No users found for organisation: " + organisationId);
         }
 
+        logger.info("Users fetched successfully | orgId={} count={}", organisationId, list.size());
         return ResponseEntity.ok(list);
     }
 
@@ -161,17 +154,15 @@ public class UserImpl implements UserService {
     public ResponseEntity<?> getByEntity(String entityId) {
         logger.info("Fetching users by entity | entityId={}", entityId);
 
-        if (entityId == null || entityId.isBlank()) {
-            throw new BadRequestException("entityId is required");
-        }
-
         List<Userresponse> list = repository.findByEntityId(entityId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
+            logger.warn("No users found | entityId={}", entityId);
             throw new NotFoundException("No users found for entity: " + entityId);
         }
 
+        logger.info("Users fetched successfully | entityId={} count={}", entityId, list.size());
         return ResponseEntity.ok(list);
     }
 

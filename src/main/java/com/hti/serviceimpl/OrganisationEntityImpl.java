@@ -6,7 +6,6 @@ import com.hti.entity.Organisationentity;
 import com.hti.Repository.Organisationentityrepository;
 import com.hti.service.OrganisationEntityService;
 import com.hti.exception.NotFoundException;
-import com.hti.exception.BadRequestException;
 import com.hti.exception.InternalServerException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,21 +21,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrganisationEntityImpl implements OrganisationEntityService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrganisationEntityImpl.class);
+    //private static final Logger logger = LoggerFactory.getLogger(OrganisationEntityImpl.class);
+	
+	private static final Logger logger = LoggerFactory.getLogger("tracklogger");
+
+	 
 
     private final Organisationentityrepository repository;
 
     @Override
     public ResponseEntity<?> create(OrganisationEntityRequest request) {
         logger.info("Creating entity | type={} orgId={}", request.getEntityType(), request.getOrganisationId());
-
-        if (request.getOrganisationId() == null || request.getOrganisationId().isBlank()) {
-            throw new BadRequestException("organisationId is required");
-        }
-
-        if (request.getEntityType() == null || request.getEntityType().isBlank()) {
-            throw new BadRequestException("entityType is required");
-        }
 
         try {
             Organisationentity entity = Organisationentity.builder()
@@ -47,11 +42,11 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
                     .build();
 
             entity = repository.save(entity);
-            logger.info("Entity created | id={} type={}", entity.getId(), entity.getEntityType());
+            logger.info("Entity created successfully | id={} type={}", entity.getId(), entity.getEntityType());
             return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(entity));
 
         } catch (Exception ex) {
-            logger.error("Error creating entity | type={} error={}", request.getEntityType(), ex.getMessage());
+        	logger.error("Error creating entity | type={}", request.getEntityType(), ex);
             throw new InternalServerException("Failed to create entity: " + ex.getMessage());
         }
     }
@@ -61,11 +56,10 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         logger.info("Updating entity | id={}", id);
 
         Organisationentity entity = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Entity not found: " + id));
-
-        if (request.getEntityType() == null || request.getEntityType().isBlank()) {
-            throw new BadRequestException("entityType is required");
-        }
+                .orElseThrow(() -> {
+                    logger.warn("Entity not found | id={}", id);
+                    return new NotFoundException("Entity not found: " + id);
+                });
 
         try {
             entity.setEntityType(request.getEntityType());
@@ -73,11 +67,11 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
             entity.setAttributes(request.getAttributes());
 
             entity = repository.save(entity);
-            logger.info("Entity updated | id={}", entity.getId());
+            logger.info("Entity updated successfully | id={}", entity.getId());
             return ResponseEntity.ok(toResponse(entity));
 
         } catch (Exception ex) {
-            logger.error("Error updating entity | id={} error={}", id, ex.getMessage());
+        	logger.error("Error updating entity | id={}", id, ex);
             throw new InternalServerException("Failed to update entity: " + ex.getMessage());
         }
     }
@@ -87,16 +81,17 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         logger.info("Deleting entity | id={}", id);
 
         if (!repository.existsById(id)) {
+            logger.warn("Entity not found | id={}", id);
             throw new NotFoundException("Entity not found: " + id);
         }
 
         try {
             repository.deleteById(id);
-            logger.info("Entity deleted | id={}", id);
+            logger.info("Entity deleted successfully | id={}", id);
             return ResponseEntity.ok("Entity deleted successfully");
 
         } catch (Exception ex) {
-            logger.error("Error deleting entity | id={} error={}", id, ex.getMessage());
+        	logger.error("Error deleting entity | id={}", id, ex);
             throw new InternalServerException("Failed to delete entity: " + ex.getMessage());
         }
     }
@@ -106,8 +101,12 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         logger.info("Fetching entity | id={}", id);
 
         Organisationentity entity = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Entity not found: " + id));
+                .orElseThrow(() -> {
+                    logger.warn("Entity not found | id={}", id);
+                    return new NotFoundException("Entity not found: " + id);
+                });
 
+        logger.info("Entity fetched successfully | id={}", id);
         return ResponseEntity.ok(toResponse(entity));
     }
 
@@ -118,10 +117,11 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         try {
             List<Organisationentityresponse> list = repository.findAll()
                     .stream().map(this::toResponse).collect(Collectors.toList());
+            logger.info("Entities fetched successfully | count={}", list.size());
             return ResponseEntity.ok(list);
 
         } catch (Exception ex) {
-            logger.error("Error fetching all entities | error={}", ex.getMessage());
+        	logger.error("Error fetching all entities", ex);
             throw new InternalServerException("Failed to fetch entities: " + ex.getMessage());
         }
     }
@@ -130,17 +130,15 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     public ResponseEntity<?> getByOrganisation(String organisationId) {
         logger.info("Fetching entities by org | orgId={}", organisationId);
 
-        if (organisationId == null || organisationId.isBlank()) {
-            throw new BadRequestException("organisationId is required");
-        }
-
         List<Organisationentityresponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
+            logger.warn("No entities found | orgId={}", organisationId);
             throw new NotFoundException("No entities found for organisation: " + organisationId);
         }
 
+        logger.info("Entities fetched successfully | orgId={} count={}", organisationId, list.size());
         return ResponseEntity.ok(list);
     }
 
@@ -148,17 +146,15 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     public ResponseEntity<?> getByEntityType(String entityType) {
         logger.info("Fetching entities by type | type={}", entityType);
 
-        if (entityType == null || entityType.isBlank()) {
-            throw new BadRequestException("entityType is required");
-        }
-
         List<Organisationentityresponse> list = repository.findByEntityType(entityType)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
+            logger.warn("No entities found | type={}", entityType);
             throw new NotFoundException("No entities found for type: " + entityType);
         }
 
+        logger.info("Entities fetched successfully | type={} count={}", entityType, list.size());
         return ResponseEntity.ok(list);
     }
 
@@ -166,33 +162,23 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     public ResponseEntity<?> searchByAttribute(String organisationId, String key, String value) {
         logger.info("Searching entity by attribute | orgId={} key={} value={}", organisationId, key, value);
 
-        if (organisationId == null || organisationId.isBlank()) {
-            throw new BadRequestException("organisationId is required");
-        }
-
-        if (key == null || key.isBlank()) {
-            throw new BadRequestException("search key is required");
-        }
-
-        if (value == null || value.isBlank()) {
-            throw new BadRequestException("search value is required");
-        }
-
         try {
             List<Organisationentityresponse> list = repository
                     .findByOrganisationIdAndAttribute(organisationId, key, value)
                     .stream().map(this::toResponse).collect(Collectors.toList());
 
             if (list.isEmpty()) {
+                logger.warn("No entities found | key={} value={}", key, value);
                 throw new NotFoundException("No entities found for key=" + key + " value=" + value);
             }
 
+            logger.info("Entities found successfully | key={} value={} count={}", key, value, list.size());
             return ResponseEntity.ok(list);
 
         } catch (NotFoundException ex) {
             throw ex;
         } catch (Exception ex) {
-            logger.error("Error searching entity | key={} value={} error={}", key, value, ex.getMessage());
+        	logger.error("Error searching entity | key={} value={}", key, value, ex);
             throw new InternalServerException("Failed to search entities: " + ex.getMessage());
         }
     }
