@@ -5,6 +5,9 @@ import com.hti.response.Organisationresponse;
 import com.hti.entity.organisation;
 import com.hti.Repository.Organisationrepository;
 import com.hti.service.OrganisationService;
+import com.hti.exception.NotFoundException;
+import com.hti.exception.BadRequestException;
+import com.hti.exception.InternalServerException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,99 +28,130 @@ public class OrganisationImpl implements OrganisationService {
 
     @Override
     public ResponseEntity<?> create(Organisationrequest request) {
-        logger.info("{}: Creating organisation | name={}",  request.getOrganizationName());
+        logger.info("Creating organisation | name={}", request.getOrganizationName());
 
-        if (repository.existsByEmail(request.getEmail())) {
-            logger.warn("{}: Organisation already exists | email={}", request.getEmail());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Organisation with email '" + request.getEmail() + "' already exists");
+        if (request.getOrganizationName() == null || request.getOrganizationName().isBlank()) {
+            throw new BadRequestException("organizationName is required");
         }
 
-        organisation org = organisation.builder()
-                .organizationName(request.getOrganizationName())
-                .domain(request.getDomain())
-                .organizationType(request.getOrganizationType())
-                .companyRegistrationNumber(request.getCompanyRegistrationNumber())
-                .websiteUrl(request.getWebsiteUrl())
-                .logoUrl(request.getLogoUrl())
-                .industryType(request.getIndustryType())
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .registeredAddress(request.getRegisteredAddress())
-                .city(request.getCity())
-                .state(request.getState())
-                .country(request.getCountry())
-                .postalCode(request.getPostalCode())
-                .timezone(request.getTimezone())
-                .build();
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new BadRequestException("email is required");
+        }
 
-        org = repository.save(org);
-        logger.info("{}: Organisation created | id={} name={}", org.getId(), org.getOrganizationName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(org));
+        if (repository.existsByEmail(request.getEmail())) {
+            logger.warn("Organisation already exists | email={}", request.getEmail());
+            throw new BadRequestException("Organisation with email '" + request.getEmail() + "' already exists");
+        }
+
+        try {
+            organisation org = organisation.builder()
+                    .organizationName(request.getOrganizationName())
+                    .domain(request.getDomain())
+                    .organizationType(request.getOrganizationType())
+                    .companyRegistrationNumber(request.getCompanyRegistrationNumber())
+                    .websiteUrl(request.getWebsiteUrl())
+                    .logoUrl(request.getLogoUrl())
+                    .industryType(request.getIndustryType())
+                    .email(request.getEmail())
+                    .phone(request.getPhone())
+                    .registeredAddress(request.getRegisteredAddress())
+                    .city(request.getCity())
+                    .state(request.getState())
+                    .country(request.getCountry())
+                    .postalCode(request.getPostalCode())
+                    .timezone(request.getTimezone())
+                    .build();
+
+            org = repository.save(org);
+            logger.info("Organisation created | id={} name={}", org.getId(), org.getOrganizationName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(org));
+
+        } catch (Exception ex) {
+            logger.error("Error creating organisation | name={} error={}", request.getOrganizationName(), ex.getMessage());
+            throw new InternalServerException("Failed to create organisation: " + ex.getMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> update(String id, Organisationrequest request) {
-        logger.info("{}: Updating organisation | id={}", id);
+        logger.info("Updating organisation | id={}", id);
 
-        organisation org = repository.findById(id).orElse(null);
-        if (org == null) {
-            logger.warn("{}: Organisation not found | id={}",  id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organisation not found: " + id);
+        organisation org = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Organisation not found: " + id));
+
+        if (request.getOrganizationName() == null || request.getOrganizationName().isBlank()) {
+            throw new BadRequestException("organizationName is required");
         }
 
-        org.setOrganizationName(request.getOrganizationName());
-        org.setDomain(request.getDomain());
-        org.setOrganizationType(request.getOrganizationType());
-        org.setCompanyRegistrationNumber(request.getCompanyRegistrationNumber());
-        org.setWebsiteUrl(request.getWebsiteUrl());
-        org.setLogoUrl(request.getLogoUrl());
-        org.setIndustryType(request.getIndustryType());
-        org.setEmail(request.getEmail());
-        org.setPhone(request.getPhone());
-        org.setRegisteredAddress(request.getRegisteredAddress());
-        org.setCity(request.getCity());
-        org.setState(request.getState());
-        org.setCountry(request.getCountry());
-        org.setPostalCode(request.getPostalCode());
-        org.setTimezone(request.getTimezone());
+        try {
+            org.setOrganizationName(request.getOrganizationName());
+            org.setDomain(request.getDomain());
+            org.setOrganizationType(request.getOrganizationType());
+            org.setCompanyRegistrationNumber(request.getCompanyRegistrationNumber());
+            org.setWebsiteUrl(request.getWebsiteUrl());
+            org.setLogoUrl(request.getLogoUrl());
+            org.setIndustryType(request.getIndustryType());
+            org.setEmail(request.getEmail());
+            org.setPhone(request.getPhone());
+            org.setRegisteredAddress(request.getRegisteredAddress());
+            org.setCity(request.getCity());
+            org.setState(request.getState());
+            org.setCountry(request.getCountry());
+            org.setPostalCode(request.getPostalCode());
+            org.setTimezone(request.getTimezone());
 
-        org = repository.save(org);
-        logger.info("{}: Organisation updated | id={}",org.getId());
-        return ResponseEntity.ok(toResponse(org));
+            org = repository.save(org);
+            logger.info("Organisation updated | id={}", org.getId());
+            return ResponseEntity.ok(toResponse(org));
+
+        } catch (Exception ex) {
+            logger.error("Error updating organisation | id={} error={}", id, ex.getMessage());
+            throw new InternalServerException("Failed to update organisation: " + ex.getMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> delete(String id) {
-        logger.info("{}: Deleting organisation | id={}",  id);
+        logger.info("Deleting organisation | id={}", id);
 
         if (!repository.existsById(id)) {
-            logger.warn("{}: Organisation not found | id={}", id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organisation not found: " + id);
+            throw new NotFoundException("Organisation not found: " + id);
         }
 
-        repository.deleteById(id);
-        logger.info("{}: Organisation deleted | id={}",  id);
-        return ResponseEntity.ok("Organisation deleted successfully");
+        try {
+            repository.deleteById(id);
+            logger.info("Organisation deleted | id={}", id);
+            return ResponseEntity.ok("Organisation deleted successfully");
+
+        } catch (Exception ex) {
+            logger.error("Error deleting organisation | id={} error={}", id, ex.getMessage());
+            throw new InternalServerException("Failed to delete organisation: " + ex.getMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> getById(String id) {
-        logger.info("{}: Fetching organisation | id={}",  id);
+        logger.info("Fetching organisation | id={}", id);
 
-        organisation org = repository.findById(id).orElse(null);
-        if (org == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organisation not found: " + id);
-        }
+        organisation org = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Organisation not found: " + id));
+
         return ResponseEntity.ok(toResponse(org));
     }
 
     @Override
     public ResponseEntity<?> getAll() {
-        logger.info("{}: Fetching all organisations");
-        List<Organisationresponse> list = repository.findAll()
-                .stream().map(this::toResponse).collect(Collectors.toList());
-        return ResponseEntity.ok(list);
+        logger.info("Fetching all organisations");
+
+        try {
+            List<Organisationresponse> list = repository.findAll()
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+            return ResponseEntity.ok(list);
+
+        } catch (Exception ex) {
+            logger.error("Error fetching all organisations | error={}", ex.getMessage());
+            throw new InternalServerException("Failed to fetch organisations: " + ex.getMessage());
+        }
     }
 
     private Organisationresponse toResponse(organisation org) {

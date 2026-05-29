@@ -2,6 +2,7 @@ package com.hti.controller;
 
 import com.hti.request.Organisationrequest;
 import com.hti.service.OrganisationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ public class OrganisationController {
     private final OrganisationService service;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody Organisationrequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody Organisationrequest request) {
         return service.create(request);
     }
 
@@ -31,7 +32,7 @@ public class OrganisationController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable String id,
-                                    @RequestBody Organisationrequest request) {
+                                    @Valid @RequestBody Organisationrequest request) {
         return service.update(id, request);
     }
 

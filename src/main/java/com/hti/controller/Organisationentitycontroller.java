@@ -2,6 +2,7 @@ package com.hti.controller;
 
 import com.hti.request.OrganisationEntityRequest;
 import com.hti.service.OrganisationEntityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ public class Organisationentitycontroller {
     private final OrganisationEntityService service;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody OrganisationEntityRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody OrganisationEntityRequest request) {
         return service.create(request);
     }
 
@@ -41,14 +42,14 @@ public class Organisationentitycontroller {
 
     @GetMapping("/org/{organisationId}/search")
     public ResponseEntity<?> searchByAttribute(@PathVariable String organisationId,
-                                               @RequestParam String key,
-                                               @RequestParam String value) {
+                                                @RequestParam String key,
+                                                @RequestParam String value) {
         return service.searchByAttribute(organisationId, key, value);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable String id,
-                                    @RequestBody OrganisationEntityRequest request) {
+                                    @Valid @RequestBody OrganisationEntityRequest request) {
         return service.update(id, request);
     }
 

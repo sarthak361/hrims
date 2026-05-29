@@ -2,6 +2,7 @@ package com.hti.controller;
 
 import com.hti.request.Userrequest;
 import com.hti.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ public class UserController {
     private final UserService service;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody Userrequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody Userrequest request) {
         return service.create(request);
     }
 
@@ -41,7 +42,7 @@ public class UserController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable String id,
-                                    @RequestBody Userrequest request) {
+                                    @Valid @RequestBody Userrequest request) {
         return service.update(id, request);
     }
 
