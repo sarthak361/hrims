@@ -54,7 +54,6 @@ public class UserImpl implements UserService {
                     .email(request.getEmail())
                     .phone(request.getPhone())
                     .password(request.getPassword())
-                    .role(request.getRole())
                     .organisationId(request.getOrganisationId())
                     .entityId(request.getEntityId())
                     .build();
@@ -84,7 +83,6 @@ public class UserImpl implements UserService {
             user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
             user.setPhone(request.getPhone());
-            user.setRole(request.getRole());
             user.setEntityId(request.getEntityId());
 
             user = repository.save(user);
@@ -184,7 +182,6 @@ public class UserImpl implements UserService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .role(user.getRole())
                 .organisationId(user.getOrganisationId())
                 .entityId(user.getEntityId())
                 .createdAt(user.getCreatedAt())

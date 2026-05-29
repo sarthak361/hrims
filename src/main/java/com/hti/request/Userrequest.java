@@ -32,7 +32,6 @@ public class Userrequest {
     @Size(min = 6, max = 20, message = "Password must be between 6 and 20 characters")
     private String password;
 
-    private String role;
 
     @NotBlank(message = "Organisation ID is required")
     private String organisationId;

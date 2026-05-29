@@ -37,9 +37,6 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "role")
-    private String role;
-
     @Column(name = "organisation_id", nullable = false)
     private String organisationId;
 
