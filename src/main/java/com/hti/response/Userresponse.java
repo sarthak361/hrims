@@ -2,7 +2,6 @@ package com.hti.response;
 
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -18,6 +17,5 @@ public class Userresponse {
     private String role;
     private String organisationId;
     private String entityId;
-    private Map<String, Object> attributes;
     private LocalDateTime createdAt;
 }

@@ -1,7 +1,6 @@
 package com.hti.request;
 
 import lombok.*;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -17,5 +16,4 @@ public class Userrequest {
     private String role;
     private String organisationId;
     private String entityId;
-    private Map<String, Object> attributes;  // dynamic JSONB fields
 }
