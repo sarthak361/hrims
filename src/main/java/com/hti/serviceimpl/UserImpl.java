@@ -1,6 +1,9 @@
 package com.hti.serviceimpl;
 
 import java.util.List;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -13,14 +16,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.hti.Repository.Userrepository;
+import com.hti.Repository.UserRepository;
 import com.hti.entity.User;
 import com.hti.exception.BadRequestException;
 import com.hti.exception.InternalServerException;
 import com.hti.exception.NotFoundException;
-import com.hti.request.Userrequest;
+import com.hti.request.UserRequest;
 import com.hti.response.PaginatedResponse;
-import com.hti.response.Userresponse;
+import com.hti.response.UserResponse;
 import com.hti.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,10 +34,10 @@ public class UserImpl implements UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserImpl.class);
 
-    private final Userrepository repository;
+    private final UserRepository repository;
 
     @Override
-    public ResponseEntity<?> create(Userrequest request) {
+    public ResponseEntity<?> create(UserRequest request) {
         logger.info("Creating user | email={}", request.getEmail());
 
         if (repository.existsByEmail(request.getEmail())) {
@@ -66,7 +69,7 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> update(String id, Userrequest request) {
+    public ResponseEntity<?> update(String id, UserRequest request) {
         logger.info("Updating user | id={}", id);
 
         User user = repository.findById(id)
@@ -126,56 +129,70 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
-                                     String search) {
-        logger.info("Fetching all users | page={}, size={}, sortBy={}, sortDir={}, search={}",
-                    page, size, sortBy, sortDirection, search);
-        try {
-            Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("asc"))
-                    ? Sort.Direction.ASC : Sort.Direction.DESC;
+public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
+                                 String search) {
+    logger.info("Fetching all users | page={}, size={}, sortBy={}, sortDir={}, search={}",
+                page, size, sortBy, sortDirection, search);
+    try {
+        Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("asc"))
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-            String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-            Page<User> result = repository.searchUsers(
-                    (search != null && !search.isBlank()) ? search : null,
-                    pageable
-            );
-
-            if (result.isEmpty()) {
-                throw new NotFoundException("No User found.");
+            if (search != null && !search.trim().isEmpty()) {
+                String pattern = "%" + search.toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("firstName")),      pattern),
+                    cb.like(cb.lower(root.get("lastName")),       pattern),
+                    cb.like(cb.lower(root.get("email")),          pattern),
+                    cb.like(cb.lower(root.get("phone")),          pattern),
+                    cb.like(cb.lower(root.get("organisationId")), pattern),
+                    cb.like(cb.lower(root.get("entityId")),       pattern)
+                ));
             }
 
-            var content = result.getContent()
-                    .stream()
-                    .map(this::toResponse)
-                    .toList();
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-            PaginatedResponse<Userresponse> paginatedData = new PaginatedResponse<>(
-                    content,
-                    result.getNumber(),
-                    result.getSize(),
-                    result.getTotalElements(),
-                    result.getTotalPages(),
-                    result.isLast()
-            );
+        Page<User> result = repository.findAll(spec, pageable);
 
-            logger.info("Users fetched successfully | totalElements={}", result.getTotalElements());
-            return ResponseEntity.ok(paginatedData);
-
-        } catch (NotFoundException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            logger.error("Error fetching all users", ex);
-            throw new InternalServerException("Failed to fetch users: " + ex.getMessage());
+        if (result.isEmpty()) {
+            throw new NotFoundException("No User found.");
         }
+
+        var content = result.getContent()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
+        PaginatedResponse<UserResponse> paginatedData = new PaginatedResponse<>(
+                content,
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
+
+        logger.info("Users fetched successfully | totalElements={}", result.getTotalElements());
+        return ResponseEntity.ok(paginatedData);
+
+    } catch (NotFoundException ex) {
+        throw ex;
+    } catch (Exception ex) {
+        logger.error("Error fetching all users", ex);
+        throw new InternalServerException("Failed to fetch users: " + ex.getMessage());
     }
+}
 
     @Override
     public ResponseEntity<?> getByOrganisation(String organisationId) {
         logger.info("Fetching users by org | orgId={}", organisationId);
 
-        List<Userresponse> list = repository.findByOrganisationId(organisationId)
+        List<UserResponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
@@ -191,7 +208,7 @@ public class UserImpl implements UserService {
     public ResponseEntity<?> getByEntity(String entityId) {
         logger.info("Fetching users by entity | entityId={}", entityId);
 
-        List<Userresponse> list = repository.findByEntityId(entityId)
+        List<UserResponse> list = repository.findByEntityId(entityId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
@@ -203,8 +220,8 @@ public class UserImpl implements UserService {
         return ResponseEntity.ok(list);
     }
 
-    private Userresponse toResponse(User user) {
-        return Userresponse.builder()
+    private UserResponse toResponse(User user) {
+        return UserResponse.builder()
                 .id(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())

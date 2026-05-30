@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Organisationrequest {
+public class OrganisationRequest {
 
     @NotBlank(message = "Organization name is required")
     @Size(min = 2, max = 100, message = "Organization name must be between 2 and 100 characters")

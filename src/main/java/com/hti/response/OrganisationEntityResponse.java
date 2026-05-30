@@ -9,7 +9,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Organisationentityresponse {
+public class OrganisationEntityResponse {
     private String id;
     private String organisationId;
     private String entityType;

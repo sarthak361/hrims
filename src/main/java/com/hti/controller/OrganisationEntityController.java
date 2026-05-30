@@ -9,9 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/entities")
+@RequestMapping("/entities")
 @RequiredArgsConstructor
-public class Organisationentitycontroller {
+public class OrganisationEntityController {
 
     private final OrganisationEntityService service;
 

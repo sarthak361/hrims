@@ -1,6 +1,6 @@
 package com.hti.controller;
 
-import com.hti.request.Organisationrequest;
+import com.hti.request.OrganisationRequest;
 import com.hti.service.OrganisationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,14 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/organisations")
+@RequestMapping("/organisations")
 @RequiredArgsConstructor
 public class OrganisationController {
 
 	private final OrganisationService service;
 
-	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> create(@Valid @RequestBody Organisationrequest request) {
+	@PostMapping
+	public ResponseEntity<?> create(@Valid @RequestBody OrganisationRequest request) {
 		return service.create(request);
 	}
 
@@ -28,6 +28,7 @@ public class OrganisationController {
 	        @RequestParam(required = false)    String sortDirection,
 	        @RequestParam(required = false)    String search
 	) {
+	
 	    return service.getAll(page, size, sortBy, sortDirection, search);
 	}
 
@@ -37,7 +38,7 @@ public class OrganisationController {
 	}
 
 	@PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> update(@PathVariable String id, @Valid @RequestBody Organisationrequest request) {
+	public ResponseEntity<?> update(@PathVariable String id, @Valid @RequestBody OrganisationRequest request) {
 		return service.update(id, request);
 	}
 
