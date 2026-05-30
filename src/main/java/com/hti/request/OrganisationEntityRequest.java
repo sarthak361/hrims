@@ -1,12 +1,16 @@
 package com.hti.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Max;
-import lombok.*;
-
 import java.util.Map;
+import java.util.UUID;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -16,7 +20,7 @@ import java.util.Map;
 public class OrganisationEntityRequest {
 
     @NotBlank(message = "Organisation ID is required")
-    private String organisationId;
+    private UUID organisationId;
 
     @NotBlank(message = "Entity type is required")
     private String entityType;

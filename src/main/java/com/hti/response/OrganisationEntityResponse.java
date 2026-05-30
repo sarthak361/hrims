@@ -1,8 +1,14 @@
 package com.hti.response;
 
-import lombok.*;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -10,8 +16,8 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class OrganisationEntityResponse {
-    private String id;
-    private String organisationId;
+    private UUID id;
+    private UUID organisationId;
     private String entityType;
     private Integer priority;
     private Map<String, Object> attributes;

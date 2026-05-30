@@ -1,27 +1,35 @@
 package com.hti.service;
 
-import com.hti.request.OrganisationEntityRequest;
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
+
+import com.hti.request.OrganisationEntityRequest;
 
 public interface OrganisationEntityService {
 
     ResponseEntity<?> create(OrganisationEntityRequest request);
 
-    ResponseEntity<?> update(String id, OrganisationEntityRequest request);
+    ResponseEntity<?> update(UUID id, OrganisationEntityRequest request);
 
-    ResponseEntity<?> delete(String id);
+    ResponseEntity<?> delete(UUID id);
 
-    ResponseEntity<?> getById(String id);
-
+    ResponseEntity<?> getById(UUID id);
+    
     ResponseEntity<?> getAll(
-            int page, int size,
-            String sortBy, String sortDirection,
-            String search
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection,
+            String search,
+            String entityType,
+            Integer priority,
+            UUID organisationId
     );
 
-    ResponseEntity<?> getByOrganisation(String organisationId);
+    ResponseEntity<?> getByOrganisation(UUID organisationId);
 
     ResponseEntity<?> getByEntityType(String entityType);
 
-    ResponseEntity<?> searchByAttribute(String organisationId, String key, String value);
+    ResponseEntity<?> searchByAttribute(UUID organisationId, String key, String value);
 }

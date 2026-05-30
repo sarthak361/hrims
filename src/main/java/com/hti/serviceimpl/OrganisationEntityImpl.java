@@ -2,9 +2,8 @@ package com.hti.serviceimpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,13 +11,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.hti.Repository.OrganisationEntityRepository;
-import com.hti.entity.Organisationentity;
+import com.hti.entity.OrganisationEntity;
 import com.hti.exception.InternalServerException;
 import com.hti.exception.NotFoundException;
 import com.hti.request.OrganisationEntityRequest;
@@ -26,6 +25,7 @@ import com.hti.response.OrganisationEntityResponse;
 import com.hti.response.PaginatedResponse;
 import com.hti.service.OrganisationEntityService;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -41,7 +41,7 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         logger.info("Creating entity | type={} orgId={}", request.getEntityType(), request.getOrganisationId());
 
         try {
-            Organisationentity entity = Organisationentity.builder()
+            OrganisationEntity entity = OrganisationEntity.builder()
                     .organisationId(request.getOrganisationId())
                     .entityType(request.getEntityType())
                     .priority(request.getPriority())
@@ -59,12 +59,12 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     }
 
     @Override
-    public ResponseEntity<?> update(String id, OrganisationEntityRequest request) {
+    public ResponseEntity<?> update(UUID id, OrganisationEntityRequest request) {
         logger.info("Updating entity | id={}", id);
 
-        Organisationentity entity = repository.findById(id)
+        OrganisationEntity entity = repository.findById(id)
                 .orElseThrow(() -> {
-                    logger.warn("Entity not found | id={}", id);
+                    logger.error("Entity not found | id={}", id);
                     return new NotFoundException("Entity not found: " + id);
                 });
 
@@ -84,11 +84,11 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     }
 
     @Override
-    public ResponseEntity<?> delete(String id) {
+    public ResponseEntity<?> delete(UUID id) {
         logger.info("Deleting entity | id={}", id);
 
         if (!repository.existsById(id)) {
-            logger.warn("Entity not found | id={}", id);
+            logger.error("Entity not found | id={}", id);
             throw new NotFoundException("Entity not found: " + id);
         }
 
@@ -104,12 +104,12 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     }
 
     @Override
-    public ResponseEntity<?> getById(String id) {
+    public ResponseEntity<?> getById(UUID id) {
         logger.info("Fetching entity | id={}", id);
 
-        Organisationentity entity = repository.findById(id)
+        OrganisationEntity entity = repository.findById(id)
                 .orElseThrow(() -> {
-                    logger.warn("Entity not found | id={}", id);
+                    logger.error("Entity not found | id={}", id);
                     return new NotFoundException("Entity not found: " + id);
                 });
 
@@ -117,35 +117,28 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
         return ResponseEntity.ok(toResponse(entity));
     }
 
-  @Override
+@Override
 public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
-                                 String search) {
-    logger.info("Fetching all entities | page={}, size={}, sortBy={}, sortDir={}, search={}",
+                                  String search, String entityType, Integer priority, UUID organisationId) {
+    logger.info("Fetching organisation entities | page={}, size={}, sortBy={}, sortDir={}, search={}",
                 page, size, sortBy, sortDirection, search);
     try {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 5), 100);
+
         Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("asc"))
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        // ✅ Specification
-        Specification<Organisationentity> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, sortField));
 
-            if (search != null && !search.trim().isEmpty()) {
-                String pattern = "%" + search.toLowerCase() + "%";
-                predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("entityType")),      pattern),
-                    cb.like(cb.lower(root.get("organisationId")),  pattern)
-                ));
-            }
+        Specification<OrganisationEntity> spec = buildOrganisationEntitySpec(
+                search, entityType, priority, organisationId
+        );
 
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        Page<OrganisationEntity> result = repository.findAll(spec, pageable);
 
-        Page<Organisationentity> result = repository.findAll(spec, pageable);
-
-        if (result.isEmpty()) {
+        if (result.getTotalElements() == 0) {
             throw new NotFoundException("No Organisation Entity found.");
         }
 
@@ -156,32 +149,64 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
 
         PaginatedResponse<OrganisationEntityResponse> paginatedData = new PaginatedResponse<>(
                 content,
-                result.getNumber(),
+                result.getNumber() + 1,
                 result.getSize(),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.isLast()
         );
 
-        logger.info("Entities fetched successfully | totalElements={}", result.getTotalElements());
+        logger.info("Organisation entities fetched successfully | totalElements={}", result.getTotalElements());
         return ResponseEntity.ok(paginatedData);
 
     } catch (NotFoundException ex) {
         throw ex;
     } catch (Exception ex) {
-        logger.error("Error fetching all entities", ex);
-        throw new InternalServerException("Failed to fetch entities: " + ex.getMessage());
+        logger.error("Error fetching organisation entities", ex);
+        throw new InternalServerException("Failed to fetch organisation entities: " + ex.getMessage());
     }
 }
+private Specification<OrganisationEntity> buildOrganisationEntitySpec(
+        String search,
+        String entityType,
+        Integer priority,
+        UUID organisationId) {
+
+    return (root, query, cb) -> {
+        List<Predicate> predicates = new ArrayList<>();
+
+        
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("entityType")),      like),
+                cb.like(cb.lower(root.get("organisationId")),  like)
+            ));
+        }
+
+       
+        if (entityType != null && !entityType.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("entityType")),
+                                    entityType.toLowerCase()));
+
+        if (priority != null)
+            predicates.add(cb.equal(root.get("priority"), priority));
+
+        if (organisationId != null)
+            predicates.add(cb.equal(root.get("organisationId"), organisationId));
+
+        return cb.and(predicates.toArray(new Predicate[0]));
+    };
+}
     @Override
-    public ResponseEntity<?> getByOrganisation(String organisationId) {
+    public ResponseEntity<?> getByOrganisation(UUID organisationId) {
         logger.info("Fetching entities by org | orgId={}", organisationId);
 
         List<OrganisationEntityResponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
-            logger.warn("No entities found | orgId={}", organisationId);
+            logger.error("No entities found | orgId={}", organisationId);
             throw new NotFoundException("No entities found for organisation: " + organisationId);
         }
 
@@ -197,7 +222,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
-            logger.warn("No entities found | type={}", entityType);
+            logger.error("No entities found | type={}", entityType);
             throw new NotFoundException("No entities found for type: " + entityType);
         }
 
@@ -206,7 +231,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
     }
 
     @Override
-    public ResponseEntity<?> searchByAttribute(String organisationId, String key, String value) {
+    public ResponseEntity<?> searchByAttribute(UUID organisationId, String key, String value) {
         logger.info("Searching entity by attribute | orgId={} key={} value={}", organisationId, key, value);
 
         try {
@@ -215,7 +240,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
                     .stream().map(this::toResponse).collect(Collectors.toList());
 
             if (list.isEmpty()) {
-                logger.warn("No entities found | key={} value={}", key, value);
+                logger.error("No entities found | key={} value={}", key, value);
                 throw new NotFoundException("No entities found for key=" + key + " value=" + value);
             }
 
@@ -230,7 +255,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
         }
     }
 
-    private OrganisationEntityResponse toResponse(Organisationentity entity) {
+    private OrganisationEntityResponse toResponse(OrganisationEntity entity) {
         return OrganisationEntityResponse.builder()
                 .id(entity.getId())
                 .organisationId(entity.getOrganisationId())

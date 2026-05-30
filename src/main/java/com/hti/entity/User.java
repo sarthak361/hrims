@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
-
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,7 +20,7 @@ public class User {
     @GeneratedValue
     @UuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
-    private String id;
+    private UUID id;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -38,11 +38,10 @@ public class User {
     private String password;
 
     @Column(name = "organisation_id", nullable = false)
-    private String organisationId;
+    private UUID organisationId;
 
-    // entity_id se organisation_entity table se join karke info milegi
     @Column(name = "entity_id")
-    private String entityId;
+    private UUID entityId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

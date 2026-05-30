@@ -1,7 +1,13 @@
 package com.hti.response;
 
-import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -9,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class OrganisationResponse {
-    private String id;
+    private UUID id;
     private String organizationName;
     private String domain;
     private String organizationType;

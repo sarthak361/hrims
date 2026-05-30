@@ -1,5 +1,7 @@
 package com.hti.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.hti.request.OrganisationEntityRequest;
 import com.hti.service.OrganisationEntityService;
 import jakarta.validation.Valid;
@@ -7,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
+@Tag(name = "Organisation Entity", description = "APIs for managing organisation entities")
 @RestController
 @RequestMapping("/entities")
 @RequiredArgsConstructor
@@ -15,52 +19,65 @@ public class OrganisationEntityController {
 
     private final OrganisationEntityService service;
 
+    @Operation(summary = "Create entity", description = "Creates a new organisation entity")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> create(@Valid @RequestBody OrganisationEntityRequest request) {
         return service.create(request);
     }
 
+    @Operation(summary = "Get all entities", description = "Fetch paginated list of entities with optional filters")
     @GetMapping
     public ResponseEntity<?> getAll(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false)    String sortBy,
             @RequestParam(required = false)    String sortDirection,
-            @RequestParam(required = false)    String search
+            @RequestParam(required = false)    String search,
+            @RequestParam(required = false)    String entityType,
+            @RequestParam(required = false)    Integer priority,
+            @RequestParam(required = false)    UUID organisationId   // String → UUID
     ) {
-        return service.getAll(page, size, sortBy, sortDirection, search);
+        return service.getAll(page, size, sortBy, sortDirection, search, entityType, priority, organisationId);
     }
 
+    @Operation(summary = "Get entity by ID", description = "Fetch a single entity by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable String id) {
+    public ResponseEntity<?> getById(@RequestParam UUID id) {  
         return service.getById(id);
     }
 
+    @Operation(summary = "Get entities by organisation", description = "Fetch all entities belonging to an organisation")
     @GetMapping("/org/{organisationId}")
-    public ResponseEntity<?> getByOrganisation(@PathVariable String organisationId) {
+    public ResponseEntity<?> getByOrganisation(@RequestParam UUID organisationId) {   
         return service.getByOrganisation(organisationId);
     }
 
+    @Operation(summary = "Get entities by type", description = "Fetch all entities of a specific type")
     @GetMapping("/type/{entityType}")
-    public ResponseEntity<?> getByEntityType(@PathVariable String entityType) {
+    public ResponseEntity<?> getByEntityType(@PathVariable String entityType) {   
         return service.getByEntityType(entityType);
     }
 
+    @Operation(summary = "Search by attribute", description = "Search entities by a specific attribute key-value pair")
     @GetMapping("/org/{organisationId}/search")
-    public ResponseEntity<?> searchByAttribute(@PathVariable String organisationId,
-                                                @RequestParam String key,
-                                                @RequestParam String value) {
+    public ResponseEntity<?> searchByAttribute(
+    		@RequestParam UUID organisationId,   
+            @RequestParam String key,
+            @RequestParam String value) {
         return service.searchByAttribute(organisationId, key, value);
     }
 
+    @Operation(summary = "Update entity", description = "Update an existing entity by ID")
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@PathVariable String id,
-                                    @Valid @RequestBody OrganisationEntityRequest request) {
+    public ResponseEntity<?> update(
+    		@RequestParam UUID id,   
+            @Valid @RequestBody OrganisationEntityRequest request) {
         return service.update(id, request);
     }
 
+    @Operation(summary = "Delete entity", description = "Delete an entity by ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id) {
+    public ResponseEntity<?> delete(@RequestParam UUID id) {  
         return service.delete(id);
     }
 }

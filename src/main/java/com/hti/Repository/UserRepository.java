@@ -2,22 +2,19 @@ package com.hti.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.hti.entity.User;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String>,
+public interface UserRepository extends JpaRepository<User, UUID>,
 JpaSpecificationExecutor<User>{
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
-    List<User> findByOrganisationId(String organisationId);
-    List<User> findByEntityId(String entityId);
+    List<User> findByOrganisationId(UUID organisationId);
+    List<User> findByEntityId(UUID entityId);
 }

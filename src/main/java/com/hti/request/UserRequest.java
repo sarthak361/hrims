@@ -2,8 +2,10 @@ package com.hti.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -32,9 +34,8 @@ public class UserRequest {
     @Size(min = 6, max = 20, message = "Password must be between 6 and 20 characters")
     private String password;
 
+    @NotNull(message = "Organisation ID is required")
+    private UUID organisationId;
 
-    @NotBlank(message = "Organisation ID is required")
-    private String organisationId;
-
-    private String entityId;
+    private UUID entityId;
 }

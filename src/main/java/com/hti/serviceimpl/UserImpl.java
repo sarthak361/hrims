@@ -1,9 +1,8 @@
 package com.hti.serviceimpl;
 
-import java.util.List;
-import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -26,6 +26,7 @@ import com.hti.response.PaginatedResponse;
 import com.hti.response.UserResponse;
 import com.hti.service.UserService;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -41,7 +42,7 @@ public class UserImpl implements UserService {
         logger.info("Creating user | email={}", request.getEmail());
 
         if (repository.existsByEmail(request.getEmail())) {
-            logger.warn("User already exists | email={}", request.getEmail());
+            logger.error("User already exists | email={}", request.getEmail());
             throw new BadRequestException("User with email '" + request.getEmail() + "' already exists");
         }
 
@@ -69,12 +70,12 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> update(String id, UserRequest request) {
+    public ResponseEntity<?> update(UUID id, UserRequest request) {
         logger.info("Updating user | id={}", id);
 
         User user = repository.findById(id)
                 .orElseThrow(() -> {
-                    logger.warn("User not found | id={}", id);
+                    logger.error("User not found | id={}", id);
                     return new NotFoundException("User not found: " + id);
                 });
 
@@ -95,11 +96,11 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> delete(String id) {
+    public ResponseEntity<?> delete(UUID id) {
         logger.info("Deleting user | id={}", id);
 
         if (!repository.existsById(id)) {
-            logger.warn("User not found | id={}", id);
+            logger.error("User not found | id={}", id);
             throw new NotFoundException("User not found: " + id);
         }
 
@@ -115,12 +116,12 @@ public class UserImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> getById(String id) {
+    public ResponseEntity<?> getById(UUID id) {
         logger.info("Fetching user | id={}", id);
 
         User user = repository.findById(id)
                 .orElseThrow(() -> {
-                    logger.warn("User not found | id={}", id);
+                    logger.error("User not found | id={}", id);
                     return new NotFoundException("User not found: " + id);
                 });
 
@@ -128,38 +129,26 @@ public class UserImpl implements UserService {
         return ResponseEntity.ok(toResponse(user));
     }
 
-    @Override
+@Override
 public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
-                                 String search) {
+                                  String search, UUID organisationId, UUID entityId) {
     logger.info("Fetching all users | page={}, size={}, sortBy={}, sortDir={}, search={}",
                 page, size, sortBy, sortDirection, search);
     try {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 5), 100);
+
         Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("asc"))
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        Specification<User> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, sortField));
 
-            if (search != null && !search.trim().isEmpty()) {
-                String pattern = "%" + search.toLowerCase() + "%";
-                predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("firstName")),      pattern),
-                    cb.like(cb.lower(root.get("lastName")),       pattern),
-                    cb.like(cb.lower(root.get("email")),          pattern),
-                    cb.like(cb.lower(root.get("phone")),          pattern),
-                    cb.like(cb.lower(root.get("organisationId")), pattern),
-                    cb.like(cb.lower(root.get("entityId")),       pattern)
-                ));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        Specification<User> spec = buildUserSpec(search, organisationId, entityId);
 
         Page<User> result = repository.findAll(spec, pageable);
 
-        if (result.isEmpty()) {
+        if (result.getTotalElements() == 0) {
             throw new NotFoundException("No User found.");
         }
 
@@ -170,7 +159,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
 
         PaginatedResponse<UserResponse> paginatedData = new PaginatedResponse<>(
                 content,
-                result.getNumber(),
+                result.getNumber() + 1,
                 result.getSize(),
                 result.getTotalElements(),
                 result.getTotalPages(),
@@ -188,15 +177,42 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
     }
 }
 
+private Specification<User> buildUserSpec(
+        String search,
+        UUID organisationId,
+        UUID entityId) {
+
+    return (root, query, cb) -> {
+        List<Predicate> predicates = new ArrayList<>();
+
+        // Fuzzy search
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("firstName")), like),
+                cb.like(cb.lower(root.get("lastName")),  like),
+                cb.like(cb.lower(root.get("email")),     like),
+                cb.like(cb.lower(root.get("phone")),     like)
+            ));
+        }
+        if (organisationId != null)
+            predicates.add(cb.equal(root.get("organisationId"), organisationId));
+
+        if (entityId != null)
+            predicates.add(cb.equal(root.get("entityId"), entityId));
+
+        return cb.and(predicates.toArray(new Predicate[0]));
+    };
+}
     @Override
-    public ResponseEntity<?> getByOrganisation(String organisationId) {
+    public ResponseEntity<?> getByOrganisation(UUID organisationId) {
         logger.info("Fetching users by org | orgId={}", organisationId);
 
         List<UserResponse> list = repository.findByOrganisationId(organisationId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
-            logger.warn("No users found | orgId={}", organisationId);
+            logger.error("No users found | orgId={}", organisationId);
             throw new NotFoundException("No users found for organisation: " + organisationId);
         }
 
@@ -205,14 +221,14 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
     }
 
     @Override
-    public ResponseEntity<?> getByEntity(String entityId) {
+    public ResponseEntity<?> getByEntity(UUID entityId) {
         logger.info("Fetching users by entity | entityId={}", entityId);
 
         List<UserResponse> list = repository.findByEntityId(entityId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
 
         if (list.isEmpty()) {
-            logger.warn("No users found | entityId={}", entityId);
+            logger.error("No users found | entityId={}", entityId);
             throw new NotFoundException("No users found for entity: " + entityId);
         }
 

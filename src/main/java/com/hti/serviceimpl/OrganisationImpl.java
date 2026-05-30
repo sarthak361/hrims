@@ -1,15 +1,20 @@
 package com.hti.serviceimpl;
 
-import org.springframework.data.jpa.domain.Specification;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
 import com.hti.Repository.OrganisationRepository;
 import com.hti.entity.organisation;
 import com.hti.exception.BadRequestException;
@@ -20,6 +25,7 @@ import com.hti.response.OrganisationResponse;
 import com.hti.response.PaginatedResponse;
 import com.hti.service.OrganisationService;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -35,9 +41,10 @@ public class OrganisationImpl implements OrganisationService {
 		logger.info("Creating organisation | name={}", request.getOrganizationName());
 
 		if (repository.existsByEmail(request.getEmail())) {
-			logger.warn("Organisation already exists | email={}", request.getEmail());
+			logger.error("Organisation already exists | email={}", request.getEmail());
 			throw new BadRequestException("Organisation with email '" + request.getEmail() + "' already exists");
 		}
+		
 
 		try {
 			organisation org = organisation.builder().organizationName(request.getOrganizationName())
@@ -62,11 +69,11 @@ public class OrganisationImpl implements OrganisationService {
 	}
 
 	@Override
-	public ResponseEntity<?> update(String id, OrganisationRequest request) {
+	public ResponseEntity<?> update(UUID id, OrganisationRequest request) {
 		logger.info("Updating organisation | id={}", id);
 
 		organisation org = repository.findById(id).orElseThrow(() -> {
-			logger.warn("Organisation not found | id={}", id);
+			logger.error("Organisation not found | id={}", id);
 			return new NotFoundException("Organisation not found: " + id);
 		});
 
@@ -98,11 +105,11 @@ public class OrganisationImpl implements OrganisationService {
 	}
 
 	@Override
-	public ResponseEntity<?> delete(String id) {
+	public ResponseEntity<?> delete(UUID id) {
 		logger.info("Deleting organisation | id={}", id);
 
 		if (!repository.existsById(id)) {
-			logger.warn("Organisation not found | id={}", id);
+			logger.error("Organisation not found | id={}", id);
 			throw new NotFoundException("Organisation not found: " + id);
 		}
 
@@ -118,11 +125,11 @@ public class OrganisationImpl implements OrganisationService {
 	}
 
 	@Override
-	public ResponseEntity<?> getById(String id) {
+	public ResponseEntity<?> getById(UUID id) {
 		logger.info("Fetching organisation | id={}", id);
 
 		organisation org = repository.findById(id).orElseThrow(() -> {
-			logger.warn("Organisation not found | id={}", id);
+			logger.error("Organisation not found | id={}", id);
 			return new NotFoundException("Organisation not found: " + id);
 		});
 
@@ -131,8 +138,16 @@ public class OrganisationImpl implements OrganisationService {
 	}
 
 @Override
-public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
-                                 String search) {
+public ResponseEntity<?> getAll( int page,
+        int size,
+        String sortBy,
+        String sortDirection,
+        String search,
+        String organizationType,
+        String industryType,
+        String city,
+        String state,
+        String country) {
     logger.info("Fetching organisations | page={}, size={}, sortBy={}, sortDir={}, search={}",
                 page, size, sortBy, sortDirection, search);
     try {
@@ -144,15 +159,25 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, sortField));
+        
+        
 
-        Specification<organisation> spec = buildOrganisationSpec(search);
+        Specification<organisation> spec = buildOrganisationSpec(
+                search, organizationType, industryType, city, state, country
+        );
 
         Page<organisation> result = repository.findAll(spec, pageable);
 
         if (result.getTotalElements() == 0) {
             throw new NotFoundException("No Organisation found.");
         }
-
+        if (safePage >= result.getTotalPages() && result.getTotalPages() > 0) {
+            throw new NotFoundException(
+                    String.format("Page %d not found. Total available pages: %d",
+                            safePage + 1,
+                            result.getTotalPages())
+            );
+        }
         var content = result.getContent()
                 .stream()
                 .map(this::toResponse)
@@ -170,7 +195,7 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
         logger.info("Organisations fetched successfully | totalElements={}", result.getTotalElements());
         return ResponseEntity.ok(paginatedData);
 
-    } catch (NotFoundException ex) {
+    }catch (NotFoundException ex) {
         throw ex;
     } catch (Exception ex) {
         logger.error("Error fetching organisations", ex);
@@ -178,24 +203,53 @@ public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDi
     }
 }
 
-private Specification<organisation> buildOrganisationSpec(String search) {
-    return globalSearch(search); 
-}
-
-private Specification<organisation> globalSearch(String search) {
+private Specification<organisation> buildOrganisationSpec(
+        String search,
+        String organizationType,
+        String industryType,
+        String city,
+        String state,
+        String country) {
     return (root, query, cb) -> {
-        if (search == null || search.trim().isEmpty()) return null; 
-        String pattern = "%" + search.toLowerCase() + "%";
-        return cb.or(
-            cb.like(cb.lower(root.get("organizationName")),  pattern),
-            cb.like(cb.lower(root.get("organizationType")),  pattern),
-            cb.like(cb.lower(root.get("registeredAddress")), pattern),
-            cb.like(cb.lower(root.get("email")),             pattern),
-            cb.like(cb.lower(root.get("country")),           pattern),
-            cb.like(cb.lower(root.get("industryType")),      pattern)
-        );
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("organizationName")), like),
+                cb.like(cb.lower(root.get("domain")),           like),
+                cb.like(cb.lower(root.get("email")),            like),
+                cb.like(cb.lower(root.get("phone")),            like),
+                cb.like(cb.lower(root.get("city")),             like),
+                cb.like(cb.lower(root.get("state")),            like),
+                cb.like(cb.lower(root.get("country")),          like)
+            ));
+        }
+
+        if (organizationType != null && !organizationType.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("organizationType")),
+                                    organizationType.toLowerCase()));
+
+        if (industryType != null && !industryType.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("industryType")),
+                                    industryType.toLowerCase()));
+
+        if (city != null && !city.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("city")),
+                                    city.toLowerCase()));
+
+        if (state != null && !state.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("state")),
+                                    state.toLowerCase()));
+
+        if (country != null && !country.isBlank())
+            predicates.add(cb.equal(cb.lower(root.get("country")),
+                                    country.toLowerCase()));
+
+        return cb.and(predicates.toArray(new Predicate[0]));
     };
 }
+
 
 	private OrganisationResponse toResponse(organisation org) {
 		return OrganisationResponse.builder().id(org.getId()).organizationName(org.getOrganizationName())

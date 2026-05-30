@@ -6,9 +6,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
-
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -17,16 +17,16 @@ import java.util.Map;
 @Builder
 @Entity
 @Table(name = "organisation_entity")
-public class Organisationentity {
+public class OrganisationEntity {
 
     @Id
     @GeneratedValue
     @UuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
-    private String id;
+    private UUID id;
 
     @Column(name = "organisation_id", nullable = false)
-    private String organisationId;
+    private UUID organisationId;
 
     @Column(name = "entity_type", nullable = false)
     private String entityType;
