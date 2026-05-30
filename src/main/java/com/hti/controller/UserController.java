@@ -21,8 +21,14 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAll() {
-        return service.getAll();
+    public ResponseEntity<?> getAll(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false)    String sortBy,
+            @RequestParam(required = false)    String sortDirection,
+            @RequestParam(required = false)    String search
+    ) {
+        return service.getAll(page, size, sortBy, sortDirection, search);
     }
 
     @GetMapping("/{id}")

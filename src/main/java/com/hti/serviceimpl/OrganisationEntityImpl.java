@@ -1,7 +1,9 @@
 package com.hti.serviceimpl;
 
 import com.hti.request.OrganisationEntityRequest;
+import org.springframework.data.domain.Pageable;
 import com.hti.response.Organisationentityresponse;
+import com.hti.response.PaginatedResponse;
 import com.hti.entity.Organisationentity;
 import com.hti.Repository.Organisationentityrepository;
 import com.hti.service.OrganisationEntityService;
@@ -10,6 +12,9 @@ import com.hti.exception.InternalServerException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -111,17 +116,47 @@ public class OrganisationEntityImpl implements OrganisationEntityService {
     }
 
     @Override
-    public ResponseEntity<?> getAll() {
-        logger.info("Fetching all entities");
-
+    public ResponseEntity<?> getAll(int page, int size, String sortBy, String sortDirection,
+                                     String search) {
+        logger.info("Fetching all entities | page={}, size={}, sortBy={}, sortDir={}, search={}",
+                    page, size, sortBy, sortDirection, search);
         try {
-            List<Organisationentityresponse> list = repository.findAll()
-                    .stream().map(this::toResponse).collect(Collectors.toList());
-            logger.info("Entities fetched successfully | count={}", list.size());
-            return ResponseEntity.ok(list);
+            Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("asc"))
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
 
+            String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+            Page<Organisationentity> result = repository.searchEntities(
+                    (search != null && !search.isBlank()) ? search : null,
+                    pageable
+            );
+
+            if (result.isEmpty()) {
+                throw new NotFoundException("No Organisation Entity found.");
+            }
+
+            var content = result.getContent()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+
+            PaginatedResponse<Organisationentityresponse> paginatedData = new PaginatedResponse<>(
+                    content,
+                    result.getNumber(),
+                    result.getSize(),
+                    result.getTotalElements(),
+                    result.getTotalPages(),
+                    result.isLast()
+            );
+
+            logger.info("Entities fetched successfully | totalElements={}", result.getTotalElements());
+            return ResponseEntity.ok(paginatedData);
+
+        } catch (NotFoundException ex) {
+            throw ex;
         } catch (Exception ex) {
-        	logger.error("Error fetching all entities", ex);
+            logger.error("Error fetching all entities", ex);
             throw new InternalServerException("Failed to fetch entities: " + ex.getMessage());
         }
     }

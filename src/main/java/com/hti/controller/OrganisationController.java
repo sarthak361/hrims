@@ -13,31 +13,36 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class OrganisationController {
 
-    private final OrganisationService service;
+	private final OrganisationService service;
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@Valid @RequestBody Organisationrequest request) {
-        return service.create(request);
-    }
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> create(@Valid @RequestBody Organisationrequest request) {
+		return service.create(request);
+	}
 
-    @GetMapping
-    public ResponseEntity<?> getAll() {
-        return service.getAll();
-    }
+	@GetMapping
+	public ResponseEntity<?> getAll(
+	        @RequestParam(defaultValue = "0")  int page,
+	        @RequestParam(defaultValue = "10") int size,
+	        @RequestParam(required = false)    String sortBy,
+	        @RequestParam(required = false)    String sortDirection,
+	        @RequestParam(required = false)    String search
+	) {
+	    return service.getAll(page, size, sortBy, sortDirection, search);
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable String id) {
-        return service.getById(id);
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<?> getById(@PathVariable String id) {
+		return service.getById(id);
+	}
 
-    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@PathVariable String id,
-                                    @Valid @RequestBody Organisationrequest request) {
-        return service.update(id, request);
-    }
+	@PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> update(@PathVariable String id, @Valid @RequestBody Organisationrequest request) {
+		return service.update(id, request);
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id) {
-        return service.delete(id);
-    }
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> delete(@PathVariable String id) {
+		return service.delete(id);
+	}
 }

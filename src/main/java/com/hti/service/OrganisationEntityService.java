@@ -13,7 +13,11 @@ public interface OrganisationEntityService {
 
     ResponseEntity<?> getById(String id);
 
-    ResponseEntity<?> getAll();
+    ResponseEntity<?> getAll(
+            int page, int size,
+            String sortBy, String sortDirection,
+            String search
+    );
 
     ResponseEntity<?> getByOrganisation(String organisationId);
 

@@ -1,11 +1,14 @@
 package com.hti.Repository;
 
 import com.hti.entity.Organisationentity;
+
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Repository
@@ -28,4 +31,13 @@ public interface Organisationentityrepository extends JpaRepository<Organisation
         @Param("key") String key,
         @Param("value") String value
     );
+    
+    @Query("SELECT o FROM Organisationentity o WHERE " +
+            "(:search IS NULL OR " +
+            "LOWER(o.entityType) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+            "LOWER(o.organisationId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
+     Page<Organisationentity> searchEntities(
+             @Param("search") String search,
+             Pageable pageable
+     );
 }
